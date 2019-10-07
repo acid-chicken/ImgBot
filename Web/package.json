@@ -6,7 +6,9 @@
     "watch": "grunt watch:site",
     "watchpack": "grunt watch:webpack",
     "prod": "grunt gen && grunt webpack:prod",
-    "serve": "grunt devserver:dist"
+    "serve": "grunt devserver:dist",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "author": "dabutvin",
   "license": "MIT",
@@ -18,7 +20,7 @@
     "bootstrap": "^4.3.1",
     "css-loader": "^3.2.0",
     "eslint": "^6.4.0",
-    "grunt": "^1.0.3",
+    "grunt": "^1.0.4",
     "grunt-contrib-clean": "^2.0.0",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-cssmin": "^3.0.0",
@@ -40,5 +42,9 @@
     "vue-template-compiler": "^2.6.6",
     "webpack": "^4.41.0",
     "webpack-cli": "^3.3.9"
+  },
+  "snyk": true,
+  "dependencies": {
+    "snyk": "^1.231.0"
   }
 }
