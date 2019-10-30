@@ -1,34 +1,29 @@
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Common.TableModels
-{
-public class Settings : TableEntity
-{
-    public Settings()
-    {
-    }
+namespace Common.TableModels {
+  public class Settings : TableEntity {
+    public Settings() {}
 
-    public Settings(string installationId, string repoName)
-    {
-        PartitionKey = installationId;
-        RowKey = repoName.ToLower();
-        InstallationId = installationId;
-        RepoName = repoName;
+    public Settings(string installationId, string repoName) {
+      PartitionKey = installationId;
+      RowKey = repoName.ToLower();
+      InstallationId = installationId;
+      RepoName = repoName;
     }
 
     public string InstallationId {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string RepoName {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string DefaultBranchOverride {
-        get;
-        set;
+      get;
+      set;
     }
-}
+  }
 }
