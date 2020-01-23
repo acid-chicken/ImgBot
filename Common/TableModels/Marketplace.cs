@@ -1,65 +1,60 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Common.TableModels
-{
-public class Marketplace : TableEntity
-{
-    public Marketplace()
-    {
-    }
+namespace Common.TableModels {
+  public class Marketplace : TableEntity {
+    public Marketplace() {}
 
-    public Marketplace(int accountId, string accountLogin)
-    {
-        PartitionKey = accountId.ToString();
-        RowKey = accountLogin;
+    public Marketplace(int accountId, string accountLogin) {
+      PartitionKey = accountId.ToString();
+      RowKey = accountLogin;
 
-        AccountId = accountId;
-        AccountLogin = accountLogin;
+      AccountId = accountId;
+      AccountLogin = accountLogin;
     }
 
     public int AccountId {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string AccountLogin {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string AccountType {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string SenderEmail {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string OrganizationBillingEmail {
-        get;
-        set;
+      get;
+      set;
     }
 
     public int PlanId {
-        get;
-        set;
+      get;
+      set;
     }
 
     public int SenderId {
-        get;
-        set;
+      get;
+      set;
     }
 
     public string SenderLogin {
-        get;
-        set;
+      get;
+      set;
     }
 
     public bool Student {
-        get;
-        set;
+      get;
+      set;
     }
-}
+  }
 }
