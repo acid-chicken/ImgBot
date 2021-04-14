@@ -21,9 +21,10 @@ namespace Auth
         private static readonly HttpClient HttpClient = new HttpClient();
 
         [FunctionName("SetupFunction")]
-        public static HttpResponseMessage Setup(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "setup")]HttpRequestMessage req,
-            ExecutionContext executionContext)
+        public static HttpResponseMessage
+        Setup([ HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
+                      Route = "setup") ] HttpRequestMessage req,
+              ExecutionContext executionContext)
         {
             var secrets = Secrets.Get(executionContext);
             var state = Guid.NewGuid().ToString();
@@ -34,23 +35,26 @@ namespace Auth
             }
 
             var response = req.CreateResponse();
-            response
-                .SetCookie("state", state)
-                .SetRedirect($"https://github.com/login/oauth/authorize?client_id={secrets.ClientId}&redirect_uri={secrets.RedirectUri}&state={state}");
+            response.SetCookie("state", state)
+                .SetRedirect(
+                    $"https://github.com/login/oauth/authorize?client_id={secrets.ClientId}&redirect_uri={secrets.RedirectUri}&state={state}");
             return response;
         }
 
         [FunctionName("CallbackFunction")]
-        public static async Task<HttpResponseMessage> Callback(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "callback")]HttpRequestMessage req,
-            ExecutionContext executionContext,
-            ILogger logger)
+        public static async Task<HttpResponseMessage>
+        Callback([ HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
+                         Route = "callback") ] HttpRequestMessage req,
+                 ExecutionContext executionContext, ILogger logger)
         {
             try
             {
                 var secrets = Secrets.Get(executionContext);
-                var storageAccount = CloudStorageAccount.Parse(Common.KnownEnvironmentVariables.AzureWebJobsStorage);
-                var marketplaceTable = storageAccount.CreateCloudTableClient().GetTableReference("marketplace");
+                var storageAccount = CloudStorageAccount.Parse(
+                    Common.KnownEnvironmentVariables.AzureWebJobsStorage);
+                var marketplaceTable =
+                    storageAccount.CreateCloudTableClient().GetTableReference(
+                        "marketplace");
 
                 var stateCookie = req.ReadCookie("state");
 
@@ -66,7 +70,8 @@ namespace Auth
 
                 if (stateQuery != stateCookie)
                 {
-                    logger.LogError("state mismatch: {StateCookie} !== {StateQuery}", stateCookie, stateQuery);
+                    logger.LogError("state mismatch: {StateCookie} !== {StateQuery}",
+                                    stateCookie, stateQuery);
                     return Winning(req);
                 }
 
@@ -76,27 +81,32 @@ namespace Auth
                     return Winning(req);
                 }
 
-                var tokenResponse = await HttpClient.PostAsJsonAsync("https://github.com/login/oauth/access_token", new
-                {
-                    client_id = secrets.ClientId,
-                    client_secret = secrets.ClientSecret,
-                    code,
-                    redirect_uri = secrets.RedirectUri,
-                    state = stateQuery
-                });
+                var tokenResponse = await HttpClient.PostAsJsonAsync(
+                    "https://github.com/login/oauth/access_token",
+                    new
+                    {
+                        client_id = secrets.ClientId,
+                        client_secret = secrets.ClientSecret,
+                        code,
+                        redirect_uri = secrets.RedirectUri,
+                        state = stateQuery
+                    });
 
                 var tokenContent = await tokenResponse.Content.ReadAsFormDataAsync();
                 if (tokenContent.Get("error") != null)
                 {
-                    logger.LogError("TokenResponse: " + await tokenResponse.Content.ReadAsStringAsync());
+                    logger.LogError("TokenResponse: " +
+                                    await tokenResponse.Content.ReadAsStringAsync());
                     return Winning(req);
                 }
 
                 var token = tokenContent.Get("access_token");
 
-                var mktplcRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user/marketplace_purchases");
+                var mktplcRequest = new HttpRequestMessage(
+                    HttpMethod.Get, "https://api.github.com/user/marketplace_purchases");
                 mktplcRequest.Headers.Add("User-Agent", "IMGBOT");
-                mktplcRequest.Headers.Authorization = new AuthenticationHeaderValue("token", token);
+                mktplcRequest.Headers.Authorization =
+                    new AuthenticationHeaderValue("token", token);
                 var mktplcResponse = await HttpClient.SendAsync(mktplcRequest);
                 var planDataJson = await mktplcResponse.Content.ReadAsStringAsync();
                 var planData = JsonConvert.DeserializeObject<PlanData[]>(planDataJson);
@@ -104,7 +114,8 @@ namespace Auth
                 var eduData = new Edu();
                 try
                 {
-                    var eduRequest = new HttpRequestMessage(HttpMethod.Get, "https://education.github.com/api/user");
+                    var eduRequest = new HttpRequestMessage(
+                        HttpMethod.Get, "https://education.github.com/api/user");
                     eduRequest.Headers.Add("User-Agent", "IMGBOT");
                     eduRequest.Headers.Add("Authorization", "token " + token);
                     var eduResponse = await HttpClient.SendAsync(eduRequest);
@@ -118,21 +129,25 @@ namespace Auth
 
                 foreach (var item in planData)
                 {
-                    var marketplaceRow = new Marketplace(item.account.id, item.account.login)
-                    {
-                        AccountType = item.account.type,
-                        PlanId = item.plan.id,
-                        Student = eduData.Student,
-                    };
+                    var marketplaceRow =
+                        new Marketplace(item.account.id, item.account.login)
+                        {
+                            AccountType = item.account.type,
+                            PlanId = item.plan.id,
+                            Student = eduData.Student,
+                        };
 
                     await marketplaceTable.CreateIfNotExistsAsync();
-                    await marketplaceTable.ExecuteAsync(TableOperation.InsertOrMerge(marketplaceRow));
+                    await marketplaceTable.ExecuteAsync(
+                        TableOperation.InsertOrMerge(marketplaceRow));
                 }
 
                 if (planData.Length == 0 && eduData.Student == true)
                 {
-                    // no marketplace data so we need to get the account id from the user api
-                    var userRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user");
+                    // no marketplace data so we need to get the account id from the user
+                    // api
+                    var userRequest = new HttpRequestMessage(HttpMethod.Get,
+                                                             "https://api.github.com/user");
                     userRequest.Headers.Add("User-Agent", "IMGBOT");
                     userRequest.Headers.Add("Authorization", "token " + token);
                     var userResponse = await HttpClient.SendAsync(userRequest);
@@ -146,7 +161,8 @@ namespace Auth
                     };
 
                     await marketplaceTable.CreateIfNotExistsAsync();
-                    await marketplaceTable.ExecuteAsync(TableOperation.InsertOrMerge(marketplaceRow));
+                    await marketplaceTable.ExecuteAsync(
+                        TableOperation.InsertOrMerge(marketplaceRow));
                 }
 
                 return Winning(req, token, stateQuery);
@@ -159,7 +175,8 @@ namespace Auth
             return Winning(req);
         }
 
-        public static HttpResponseMessage Winning(HttpRequestMessage req, string token = null, string state = null)
+        public static HttpResponseMessage
+        Winning(HttpRequestMessage req, string token = null, string state = null)
         {
             var response = req.CreateResponse();
             if (token != null)
@@ -167,7 +184,8 @@ namespace Auth
                 response.SetCookie("token", token);
             }
 
-            if (state != null && state.Contains(",") && state.Split(',')[1] == "fromapp")
+            if (state != null && state.Contains(",") &&
+                state.Split(',')[1] == "fromapp")
             {
                 response.SetRedirect(Webhost + "/app");
             }
@@ -180,26 +198,27 @@ namespace Auth
         }
 
         [FunctionName("IsAuthenticatedFunction")]
-        public static HttpResponseMessage IsAuthenticated(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "isauthenticated")]HttpRequestMessage req)
+        public static HttpResponseMessage
+        IsAuthenticated([
+          HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "isauthenticated")
+  ] HttpRequestMessage req)
         {
             var tokenCookie = req.ReadCookie("token");
             var response = req.CreateResponse();
             response.StatusCode = HttpStatusCode.OK;
-            response
-                .SetJson(new { result = !string.IsNullOrEmpty(tokenCookie) })
+            response.SetJson(new { result = !string.IsNullOrEmpty(tokenCookie) })
                 .EnableCors();
             return response;
         }
 
         [FunctionName("SignoutFunction")]
-        public static HttpResponseMessage Signout(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "signout")]HttpRequestMessage req)
+        public static HttpResponseMessage
+        Signout([ HttpTrigger(AuthorizationLevel.Anonymous, "get",
+                        Route = "signout") ] HttpRequestMessage req)
         {
-            var response = req
-                .CreateResponse()
-                .SetCookie("token", "rubbish", new DateTime(1970, 1, 1))
-                .SetRedirect(Webhost + "/app");
+            var response = req.CreateResponse()
+                               .SetCookie("token", "rubbish", new DateTime(1970, 1, 1))
+                               .SetRedirect(Webhost + "/app");
             return response;
         }
     }
