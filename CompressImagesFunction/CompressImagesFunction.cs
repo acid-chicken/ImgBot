@@ -30,13 +30,13 @@ namespace CompressImagesFunction
             var installationTokenProvider = new InstallationTokenProvider();
             var repoChecks = new RepoChecks();
             var task = RunAsync(installationTokenProvider, compressImagesMessage, openPrMessages, compressImagesMessages, settingsTable, repoChecks, logger, context);
-            if (await Task.WhenAny(task, Task.Delay(570000)) == task)
+            if (await Task.WhenAny(task, Task.Delay(750000)) == task)
             {
                 await task;
             }
             else
             {
-                logger.LogInformation($"Time out exceeded!");
+                logger.LogInformation("Time out exceeded {Owner}/{RepoName}", compressImagesMessage.Owner, compressImagesMessage.RepoName);
                 longRunningCompressMessages.Add(compressImagesMessage);
             }
         }
@@ -49,7 +49,7 @@ namespace CompressImagesFunction
             ILogger logger,
             ExecutionContext context)
         {
-            logger.LogInformation($"Starting long compress");
+            logger.LogInformation("Starting long compress {Owner}/{RepoName}", compressImagesMessage.Owner, compressImagesMessage.RepoName);
 
             var storageAccount = CloudStorageAccount.Parse(KnownEnvironmentVariables.AzureWebJobsStorage);
             var settingsTable = storageAccount.CreateCloudTableClient().GetTableReference("settings");
